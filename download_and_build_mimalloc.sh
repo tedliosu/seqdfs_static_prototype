@@ -11,7 +11,7 @@ else
     git clone "$MIMALLOC_URL" "$1" &&
         current_root_dir="$(pwd)" &&
         cd "$1" &&
-        git checkout master &&
+        git checkout main &&
         mkdir -p "$mimalloc_build_subdir" &&
         cd "$mimalloc_build_subdir" &&
         cmake -DMI_SECURE=ON "../.." &&
