@@ -34,4 +34,5 @@ Note: only Linux distributions are supported for now on this main branch.
 - Research paper this program was based on:
     - Qiuyi Lyu, Mo Sha, Bin Gong, and Kuangda Lyu. 2021. Accelerating Depth-First Traversal by Graph Ordering. In Proceedings of the 33rd International Conference on Scientific and Statistical Database Management (SSDBM '21). Association for Computing Machinery, New York, NY, USA, 13–24. [https://doi.org/10.1145/3468791.3468796](https://doi.org/10.1145/3468791.3468796)
 - Special thanks to an experienced contributor from the official *Together C & C++* Discord for helping me understand the adjacency-list structure described in the original paper.
+- Some code and documentation in this repository were drafted with assistance from ChatGPT models publicly available circa 2025-2026, but all final code review, integration, validation, testing, etc. were done by me, a human.
 
