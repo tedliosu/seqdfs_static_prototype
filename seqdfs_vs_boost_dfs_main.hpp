@@ -12,14 +12,23 @@
 #include <memory>
 #include <utility>
 
+// Temporary workaround for vecS currently breaking unit tests
+#ifdef SEQDFS_FAST_GRAPH_MODE
+using out_edge_container_type = boost::vecS;
+using vertex_container_type = boost::vecS;
+#else
+using out_edge_container_type = boost::setS;
+using vertex_container_type = boost::setS;
+#endif
+
 typedef struct custom_vertex_props {
   long seq_pop_out_idx;
   bool visited;
   long vert_name;
   boost::default_color_type vertex_color;
 } custom_vertex_props_struct;
-typedef boost::adjacency_list<boost::setS,
-                              boost::setS,
+typedef boost::adjacency_list<out_edge_container_type,
+                              vertex_container_type,
                               boost::bidirectionalS,
                               custom_vertex_props_struct>
     unigraph_type;

@@ -9,7 +9,7 @@ MS_MIMALLOC_FOLDER := ms_mimalloc
 MS_MIMALLOC_SO_OBJECT := $(MS_MIMALLOC_FOLDER)/out/release/libmimalloc.so
 
 all: $(MAIN_SRC_FILES)
-	g++ -O3 -std=c++14 $^ -o $(MAIN_EXE_FILE)
+	g++ -O3 -std=c++14 -DSEQDFS_FAST_GRAPH_MODE $^ -o $(MAIN_EXE_FILE)
 
 tests: $(MAIN_UTEST_FILES)
 	g++ -O3 -std=c++14 $^ -o $(MAIN_TESTS_EXE_FILE)
