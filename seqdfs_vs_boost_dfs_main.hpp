@@ -8,9 +8,10 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
-#include <boost/unordered/unordered_node_set.hpp>
+#include <boost/unordered/unordered_node_map.hpp>
 #include <deque>
 #include <memory>
+#include <utility>
 
 typedef struct custom_vertex_props {
   long seq_pop_out_idx;
@@ -59,43 +60,34 @@ class rec_in_deque_dfs_visit_class : public boost::default_dfs_visitor {
  private:
   std::shared_ptr<final_dfs_deque_result_type> ptr_final_dfs_deque;
   final_dfs_deque_result_type dfs_results;
-  boost::unordered_node_set<vert_descrip_type> vertices_on_curr_path;
-  std::size_t num_vertices_unigraph;
-  long recursion_lvl;
+  boost::unordered_node_map<vert_descrip_type, long> vertex_to_recur_depth_map;
 
  public:
   rec_in_deque_dfs_visit_class(const std::size_t num_vertices) {
     dfs_results = {};
     ptr_final_dfs_deque =
         std::make_shared<final_dfs_deque_result_type>(dfs_results);
-    recursion_lvl = 0;
-    num_vertices_unigraph = num_vertices;
-    vertices_on_curr_path = {};
+    vertex_to_recur_depth_map = {};
+    vertex_to_recur_depth_map.reserve(num_vertices);
+  }
+  void start_vertex(vert_descrip_type vertex, const unigraph_type& unigraph) {
+    vertex_to_recur_depth_map.insert(std::make_pair(vertex, 0L));
   }
   void discover_vertex(vert_descrip_type vertex,
                        const unigraph_type& unigraph) {
-    ptr_final_dfs_deque->push_back(std::make_pair(vertex, recursion_lvl));
+    ptr_final_dfs_deque->push_back(
+        std::make_pair(vertex, vertex_to_recur_depth_map[vertex]));
   }
   void tree_edge(edge_descrip_type tree_edge, const unigraph_type& unigraph) {
     vert_descrip_type source_vert = boost::source(tree_edge, unigraph);
-    if (vertices_on_curr_path.find(source_vert) ==
-        vertices_on_curr_path.end()) {
-      vertices_on_curr_path.insert(source_vert);
-      ++recursion_lvl;
-    }
-  }
-  void finish_edge(edge_descrip_type tree_edge, const unigraph_type& unigraph) {
-    vert_descrip_type source_vert = boost::source(tree_edge, unigraph);
-    if (vertices_on_curr_path.find(source_vert) !=
-        vertices_on_curr_path.end()) {
-      vertices_on_curr_path.erase(source_vert);
-      --recursion_lvl;
-    }
+    vert_descrip_type target_vert = boost::target(tree_edge, unigraph);
+    long source_vert_depth = vertex_to_recur_depth_map[source_vert];
+    vertex_to_recur_depth_map.insert(
+        std::make_pair(target_vert, source_vert_depth + 1L));
   }
   void reset_to_init() {
     ptr_final_dfs_deque->clear();
-    vertices_on_curr_path.clear();
-    recursion_lvl = 0;
+    vertex_to_recur_depth_map.clear();
   }
   const final_dfs_deque_result_type& get_result_deque() {
     return *ptr_final_dfs_deque;
