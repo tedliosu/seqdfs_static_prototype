@@ -6,7 +6,7 @@ MAIN_EXE_FILE := main
 MAIN_UTEST_FILES := unit_tests_seqdfs.cpp seqdfs_vs_boost_dfs_funcs_classes.cpp
 MAIN_TESTS_EXE_FILE := main_tests
 MS_MIMALLOC_FOLDER := ms_mimalloc
-MS_MIMALLOC_SO_OBJECT := $(MS_MIMALLOC_FOLDER)/out/secure/libmimalloc-secure.so
+MS_MIMALLOC_SO_OBJECT := $(MS_MIMALLOC_FOLDER)/out/release/libmimalloc.so
 
 all: $(MAIN_SRC_FILES)
 	g++ -ggdb3 -O3 -std=c++11 $^ -o $(MAIN_EXE_FILE)
