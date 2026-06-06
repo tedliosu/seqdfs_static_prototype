@@ -7,10 +7,6 @@
 #include <iostream>
 #include "seqdfs_vs_boost_dfs_main.hpp"
 
-typedef boost::property_map<
-    unigraph_type,
-    decltype(custom_vertex_props_struct::seq_pop_out_idx)
-        custom_vertex_props_struct::*>::type vert_pop_out_idx_map_type;
 typedef boost::graph_traits<unigraph_type>::out_edge_iterator out_edge_itr_type;
 
 void print_dfs_search_result(
@@ -69,108 +65,6 @@ bool check_if_search_results_are_equal(
   }
 
   return are_deeply_equal;
-}
-
-void seq_first_dfs_on_non_tree_edges(
-    const long vertex_idx,
-    const vert_deque_type& vert_seq_in_dfs_seq,
-    const dfs_seq_with_map_type& dfs_seq_with_map,
-    unigraph_type& unigraph,
-    final_dfs_deque_result_type& dfs_search_result_deque,
-    long& recursion_lvl) {
-  vert_visited_map_type vertices_idx_to_visit_data_map =
-      boost::get(&custom_vertex_props_struct::visited, unigraph);
-  vert_pop_out_idx_map_type vert_pop_out_idx_map =
-      boost::get(&custom_vertex_props_struct::seq_pop_out_idx, unigraph);
-  vert_descrip_type curr_vert = vert_seq_in_dfs_seq[vertex_idx];
-  vertices_idx_to_visit_data_map[curr_vert] = true;
-  ++recursion_lvl;
-  dfs_search_result_deque.push_back(std::make_pair(curr_vert, recursion_lvl));
-  long next_vert_idx =
-      dfs_seq_with_map.vert_to_dfs_seq_idx_map_ptr->find(curr_vert)->second + 1;
-  if (next_vert_idx < static_cast<long>(dfs_seq_with_map.dfs_seq_ptr->size())) {
-    vert_descrip_type next_vert =
-        dfs_seq_with_map.dfs_seq_ptr->at(next_vert_idx).front();
-    while (vert_pop_out_idx_map[next_vert] <= vert_pop_out_idx_map[curr_vert]) {
-      if (!vertices_idx_to_visit_data_map[next_vert]) {
-        seq_first_dfs(next_vert_idx, dfs_seq_with_map, unigraph,
-                      dfs_search_result_deque, recursion_lvl);
-      }
-      next_vert_idx = vert_pop_out_idx_map[next_vert];
-      if (next_vert_idx >=
-          static_cast<long>(dfs_seq_with_map.dfs_seq_ptr->size())) {
-        break;
-      } else {
-        next_vert = dfs_seq_with_map.dfs_seq_ptr->at(next_vert_idx).front();
-      }
-    }
-  }
-  long curr_vert_idx =
-      dfs_seq_with_map.vert_to_dfs_seq_idx_map_ptr->find(curr_vert)->second;
-  for (long non_tree_edges_vertex_idx = 1;
-       non_tree_edges_vertex_idx <
-       static_cast<long>(
-           dfs_seq_with_map.dfs_seq_ptr->at(curr_vert_idx).size());
-       ++non_tree_edges_vertex_idx) {
-    if (!vertices_idx_to_visit_data_map[dfs_seq_with_map.dfs_seq_ptr->at(
-            curr_vert_idx)[non_tree_edges_vertex_idx]]) {
-      seq_first_dfs_on_non_tree_edges(
-          non_tree_edges_vertex_idx,
-          dfs_seq_with_map.dfs_seq_ptr->at(curr_vert_idx), dfs_seq_with_map,
-          unigraph, dfs_search_result_deque, recursion_lvl);
-    }
-  }
-
-  --recursion_lvl;
-}
-
-void seq_first_dfs(const long vertex_idx,
-                   const dfs_seq_with_map_type& dfs_seq_with_map,
-                   unigraph_type& unigraph,
-                   final_dfs_deque_result_type& dfs_search_result_deque,
-                   long& recursion_lvl) {
-  vert_visited_map_type vertices_idx_to_visit_data_map =
-      boost::get(&custom_vertex_props_struct::visited, unigraph);
-  vert_pop_out_idx_map_type vert_pop_out_idx_map =
-      boost::get(&custom_vertex_props_struct::seq_pop_out_idx, unigraph);
-  vert_descrip_type curr_vert =
-      dfs_seq_with_map.dfs_seq_ptr->at(vertex_idx).front();
-  vertices_idx_to_visit_data_map[curr_vert] = true;
-  ++recursion_lvl;
-  dfs_search_result_deque.push_back(std::make_pair(curr_vert, recursion_lvl));
-  long next_vert_idx = vertex_idx + 1;
-  if (next_vert_idx < static_cast<long>(dfs_seq_with_map.dfs_seq_ptr->size())) {
-    vert_descrip_type next_vert =
-        dfs_seq_with_map.dfs_seq_ptr->at(next_vert_idx).front();
-    while (vert_pop_out_idx_map[next_vert] <= vert_pop_out_idx_map[curr_vert]) {
-      if (!vertices_idx_to_visit_data_map[next_vert]) {
-        seq_first_dfs(next_vert_idx, dfs_seq_with_map, unigraph,
-                      dfs_search_result_deque, recursion_lvl);
-      }
-      next_vert_idx = vert_pop_out_idx_map[next_vert];
-      if (next_vert_idx >=
-          static_cast<long>(dfs_seq_with_map.dfs_seq_ptr->size())) {
-        break;
-      } else {
-        next_vert = dfs_seq_with_map.dfs_seq_ptr->at(next_vert_idx).front();
-      }
-    }
-  }
-
-  for (long non_tree_edges_vertex_idx = 1;
-       non_tree_edges_vertex_idx <
-       static_cast<long>(dfs_seq_with_map.dfs_seq_ptr->at(vertex_idx).size());
-       ++non_tree_edges_vertex_idx) {
-    if (!vertices_idx_to_visit_data_map[dfs_seq_with_map.dfs_seq_ptr->at(
-            vertex_idx)[non_tree_edges_vertex_idx]]) {
-      seq_first_dfs_on_non_tree_edges(
-          non_tree_edges_vertex_idx,
-          dfs_seq_with_map.dfs_seq_ptr->at(vertex_idx), dfs_seq_with_map,
-          unigraph, dfs_search_result_deque, recursion_lvl);
-    }
-  }
-
-  --recursion_lvl;
 }
 
 void cons_dfs_seq_from_vert(const vert_descrip_type& vertex,

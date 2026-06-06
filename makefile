@@ -7,25 +7,26 @@ MAIN_UTEST_FILES := unit_tests_seqdfs.cpp seqdfs_vs_boost_dfs_funcs_classes.cpp
 MAIN_TESTS_EXE_FILE := main_tests
 MS_MIMALLOC_FOLDER := ms_mimalloc
 MS_MIMALLOC_SO_OBJECT := $(MS_MIMALLOC_FOLDER)/out/release/libmimalloc.so
+MAIN_PROG_ARGS ?=
 
 all: $(MAIN_SRC_FILES)
-	g++ -O3 -std=c++14 -DSEQDFS_FAST_GRAPH_MODE $^ -o $(MAIN_EXE_FILE)
+	g++ -O3 -std=c++17 -DSEQDFS_FAST_GRAPH_MODE $^ -lboost_program_options -o $(MAIN_EXE_FILE)
 
 tests: $(MAIN_UTEST_FILES)
-	g++ -O3 -std=c++14 $^ -o $(MAIN_TESTS_EXE_FILE)
+	g++ -O3 -std=c++17 $^ -o $(MAIN_TESTS_EXE_FILE)
 
 clean:
 	rm -rf $(MAIN_EXE_FILE) $(MAIN_TESTS_EXE_FILE)
 
 run: clean all
-	ulimit -s unlimited && ./$(MAIN_EXE_FILE)
+	ulimit -s unlimited && ./$(MAIN_EXE_FILE) $(MAIN_PROG_ARGS)
 
 run_mimalloc: clean all
 	if [ -z "$(shell find ./ | grep "./$(MS_MIMALLOC_SO_OBJECT)" | sort | head -n1)" ]; then \
 		./download_and_build_mimalloc.sh "$(MS_MIMALLOC_FOLDER)"; \
 	fi
 	ulimit -s unlimited && env MIMALLOC_SHOW_STATS=1 \
-		LD_PRELOAD=./$(MS_MIMALLOC_SO_OBJECT) ./$(MAIN_EXE_FILE)
+		LD_PRELOAD=./$(MS_MIMALLOC_SO_OBJECT) ./$(MAIN_EXE_FILE) $(MAIN_PROG_ARGS)
 
 run_tests: clean tests
 	./$(MAIN_TESTS_EXE_FILE)

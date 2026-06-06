@@ -12,10 +12,10 @@ Build dependencies include:
 
 Open a terminal interface and run:
 
-- `make run` to run program
-- `make run_mimalloc` to run program with [Microsoft mimalloc](https://github.com/microsoft/mimalloc) as memory allocator
+- `make run MAIN_PROG_ARGS="--vertices strictly_positive_integer [--mode benchmark_mode]"` to run program
+- `make run_mimalloc MAIN_PROG_ARGS="--vertices strictly_positive_integer [--mode benchmark_mode]"` to run program with [Microsoft mimalloc](https://github.com/microsoft/mimalloc) as memory allocator
 - `make run_tests` to run unit tests for SeqDFS implementation
-- NOTE: if running program with input size of vertices 15000 or larger, MUST run `ulimit -s unlimited` within the terminal before running the actual program or the program will segfault due to default stack size limits; `make run` takes care of this for you :D
+- NOTE: if running program with input size of vertices 15000 or larger, MUST run `ulimit -s unlimited` within the terminal before running the actual program or the program will segfault due to default stack size limits; `make run MAIN_PROG_ARGS="--arg arg_val..."` takes care of this for you :D
 
 Note: only Linux distributions are supported for now on this main branch.
 

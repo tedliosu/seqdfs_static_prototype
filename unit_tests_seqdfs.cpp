@@ -116,6 +116,7 @@ BOOST_DATA_TEST_CASE_F(test_research_paper_graph_gen_fixture,
   test_graph_with_vert_vec = get_constructed_graph();
   rec_in_deque_dfs_visit_class record_in_deque_dfs_visitor(
       test_graph_with_vert_vec.vert_vec_ptr->size());
+  deque_with_depth_recorder seqdfs_visitor_recorder(dfs_final_vert_seq_seqdfs);
 
   vertices_idx_to_name_map =
       boost::get(&custom_vertex_props_struct::vert_name,
@@ -146,7 +147,7 @@ BOOST_DATA_TEST_CASE_F(test_research_paper_graph_gen_fixture,
                     ->second,
                 dfs_constructed_seq_with_map,
                 *(test_graph_with_vert_vec.unigraph_ptr),
-                dfs_final_vert_seq_seqdfs, recursion_lvl);
+                seqdfs_visitor_recorder, recursion_lvl);
   boost::depth_first_visit(*(test_graph_with_vert_vec.unigraph_ptr),
                            deque_of_in_deg_zero_verts[vertex_idx],
                            record_in_deque_dfs_visitor, graph_color_map);

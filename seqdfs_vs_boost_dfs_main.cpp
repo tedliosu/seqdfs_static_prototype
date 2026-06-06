@@ -6,8 +6,8 @@
 #include <boost/graph/graph_selectors.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
+#include <boost/program_options.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
-#include <boost/unordered/unordered_node_set.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -16,6 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <string>
 #include <utility>
 
 constexpr int RANDOM_GRAPH_SEED = 94893;
@@ -33,6 +34,9 @@ typedef std::deque<vert_descript_to_recur_depth_type>
     final_dfs_deque_result_type;
 typedef std::pair<long, long> edge_using_long_type;
 typedef std::vector<edge_using_long_type> long_edges_vec_type;
+namespace prog_opts = boost::program_options;
+
+enum class bench_mode { record_depth, count_only };
 
 unigraph_with_vert_vec_type generate_random_graph(std::size_t num_vertices) {
   std::size_t num_addit_edges = INTEGRAL_E_ADDIT_TO_V_RATIO * num_vertices + 1;
@@ -113,7 +117,7 @@ unigraph_with_vert_vec_type generate_random_graph(std::size_t num_vertices) {
   return graph_with_vert_vec;
 }
 
-int main() {
+int main(int argc, char** argv) {
   vert_name_map_type vertices_idx_to_name_map;
   vert_visited_map_type vertices_idx_to_visit_data_map;
   unigraph_with_vert_vec_type test_graph_with_vert_vec = {};
@@ -122,17 +126,58 @@ int main() {
   vert_deque_type deque_of_in_deg_zero_verts = {};
   color_map_type graph_color_map = {};
   long seq_idx = 0;
+
+  std::string req_mode_str = "record-depth";
   std::size_t num_vertices = 0;
 
-  while (num_vertices <= 0) {
-    std::cout
-        << "Enter the number of graph verticies (NON-ZERO POSITIVE VALUE): ";
-    std::cin >> num_vertices;
+  prog_opts::options_description descrip("Allowed options");
+  descrip.add_options()("help,h", "show help message")(
+      "mode",
+      prog_opts::value<std::string>(&req_mode_str)
+          ->default_value("record-depth"),
+      "benchmark mode: record-depth or count-only")(
+      "vertices,n", prog_opts::value<std::size_t>(&num_vertices),
+      "number of graph vertices");
+
+  prog_opts::variables_map vars_map;
+
+  try {
+    prog_opts::store(prog_opts::parse_command_line(argc, argv, descrip),
+                     vars_map);
+    prog_opts::notify(vars_map);
+  } catch (const prog_opts::error& err) {
+    std::cerr << "Error: " << err.what() << "\n\n" << descrip << "\n";
+    return EXIT_FAILURE;
+  }
+
+  if (vars_map.count("help")) {
+    std::cout << descrip << "\n";
+    return EXIT_SUCCESS;
+  }
+
+  bench_mode req_mode;
+  if (req_mode_str == "record-depth") {
+    req_mode = bench_mode::record_depth;
+  } else if (req_mode_str == "count-only") {
+    req_mode = bench_mode::count_only;
+  } else {
+    std::cerr << "Invalid --mode: " << req_mode_str << "\n\n"
+              << descrip << "\n";
+    return EXIT_FAILURE;
+  }
+
+  if (num_vertices == 0) {
+    std::cerr << "Please pass --vertices N with N > 0\n";
+    return EXIT_FAILURE;
   }
 
   rec_in_deque_dfs_visit_class record_in_deque_dfs_visitor(num_vertices);
+  rec_in_counter_dfs_visit_class record_in_counter_visitor;
+  deque_with_depth_recorder seqdfs_record_depth_visitor(
+      dfs_final_vert_seq_seqdfs);
+  count_only_recorder seqdfs_record_count_visitor;
 
-  std::cout << "\n\n\n\nGenerating graph, please be patient...\n";
+  std::cout << "\n\n\nGenerating graph, please be patient...\n";
   test_graph_with_vert_vec = generate_random_graph(num_vertices);
   std::cout << "Graph generation done!\n";
 
@@ -179,19 +224,31 @@ int main() {
     }
     long recursion_lvl = -1;
     dfs_final_vert_seq_seqdfs.clear();
+    seqdfs_record_count_visitor.reset();
 
     std::cout << "\n\n\tStarting SeqDFS-style DFS on reordered graph copy at "
                  "vertex \""
               << vertices_idx_to_name_map[ptr_to_all_verts->at(vert_idx)]
               << "\"...\n";
-    start_moment = std::chrono::steady_clock::now();
-    seq_first_dfs(dfs_constructed_seq_with_map.vert_to_dfs_seq_idx_map_ptr
-                      ->find(ptr_to_all_verts->at(vert_idx))
-                      ->second,
-                  dfs_constructed_seq_with_map,
-                  *(test_graph_with_vert_vec.unigraph_ptr),
-                  dfs_final_vert_seq_seqdfs, recursion_lvl);
-    end_moment = std::chrono::steady_clock::now();
+    if (req_mode == bench_mode::record_depth) {
+      start_moment = std::chrono::steady_clock::now();
+      seq_first_dfs(dfs_constructed_seq_with_map.vert_to_dfs_seq_idx_map_ptr
+                        ->find(ptr_to_all_verts->at(vert_idx))
+                        ->second,
+                    dfs_constructed_seq_with_map,
+                    *(test_graph_with_vert_vec.unigraph_ptr),
+                    seqdfs_record_depth_visitor, recursion_lvl);
+      end_moment = std::chrono::steady_clock::now();
+    } else {
+      start_moment = std::chrono::steady_clock::now();
+      seq_first_dfs(dfs_constructed_seq_with_map.vert_to_dfs_seq_idx_map_ptr
+                        ->find(ptr_to_all_verts->at(vert_idx))
+                        ->second,
+                    dfs_constructed_seq_with_map,
+                    *(test_graph_with_vert_vec.unigraph_ptr),
+                    seqdfs_record_count_visitor, recursion_lvl);
+      end_moment = std::chrono::steady_clock::now();
+    }
     total_exec_times_seqdfs += (end_moment - start_moment);
     time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                        end_moment - start_moment)
@@ -201,13 +258,22 @@ int main() {
               << "\tSeqDFS-style DFS as mentioned previously took "
               << time_elapsed << " seconds.\n";
 
-    std::cout << "\tSeqDFS-style DFS as mentioned previously traversed "
-              << dfs_final_vert_seq_seqdfs.size()
-              << " vertices out\n\t\tof a total of " << ptr_to_all_verts->size()
-              << "\n";
+    if (req_mode == bench_mode::record_depth) {
+      std::cout << "\tSeqDFS-style DFS as mentioned previously traversed "
+                << dfs_final_vert_seq_seqdfs.size()
+                << " vertices out\n\t\tof a total of "
+                << ptr_to_all_verts->size() << "\n";
+    } else {
+      std::cout << "\tSeqDFS-style DFS as mentioned previously traversed "
+                << seqdfs_record_count_visitor.num_recorded_verts()
+                << " vertices out\n\t\tof a total of "
+                << ptr_to_all_verts->size() << "\n";
+    }
 
     dfs_final_vert_seq_boost_dfs.clear();
     record_in_deque_dfs_visitor.reset_to_init(
+        *(test_graph_with_vert_vec.vert_vec_ptr));
+    record_in_counter_visitor.reset_to_init(
         *(test_graph_with_vert_vec.vert_vec_ptr));
     for (const vert_descrip_type& vertex : *ptr_to_all_verts) {
       graph_color_map[vertex] = color_template::white();
@@ -217,11 +283,19 @@ int main() {
               << vertices_idx_to_name_map[ptr_to_all_verts->at(vert_idx)]
               << "\"...\n";
 
-    start_moment = std::chrono::steady_clock::now();
-    boost::depth_first_visit(*(test_graph_with_vert_vec.unigraph_ptr),
-                             ptr_to_all_verts->at(vert_idx),
-                             record_in_deque_dfs_visitor, graph_color_map);
-    end_moment = std::chrono::steady_clock::now();
+    if (req_mode == bench_mode::record_depth) {
+      start_moment = std::chrono::steady_clock::now();
+      boost::depth_first_visit(*(test_graph_with_vert_vec.unigraph_ptr),
+                               ptr_to_all_verts->at(vert_idx),
+                               record_in_deque_dfs_visitor, graph_color_map);
+      end_moment = std::chrono::steady_clock::now();
+    } else {
+      start_moment = std::chrono::steady_clock::now();
+      boost::depth_first_visit(*(test_graph_with_vert_vec.unigraph_ptr),
+                               ptr_to_all_verts->at(vert_idx),
+                               record_in_counter_visitor, graph_color_map);
+      end_moment = std::chrono::steady_clock::now();
+    }
     total_exec_times_boost_dfs += (end_moment - start_moment);
     time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                        end_moment - start_moment)
@@ -234,16 +308,26 @@ int main() {
     dfs_final_vert_seq_boost_dfs =
         record_in_deque_dfs_visitor.get_result_deque();
 
-    std::cout << "\tBoost DFS as mentioned previously traversed "
-              << dfs_final_vert_seq_boost_dfs.size()
-              << " vertices out\n\t\tof a total of " << ptr_to_all_verts->size()
-              << "\n";
+    if (req_mode == bench_mode::record_depth) {
+      std::cout << "\tBoost DFS as mentioned previously traversed "
+                << dfs_final_vert_seq_boost_dfs.size()
+                << " vertices out\n\t\tof a total of "
+                << ptr_to_all_verts->size() << "\n";
+    } else {
+      std::cout << "\tBoost DFS as mentioned previously traversed "
+                << record_in_counter_visitor.get_num_verts_recorded()
+                << " vertices out\n\t\tof a total of "
+                << ptr_to_all_verts->size() << "\n";
+    }
 
     // Check only works for first vertex unfortunately due to graph reordering
     if (vert_idx == 0) {
-      check_if_search_results_are_equal(dfs_final_vert_seq_boost_dfs,
-                                        dfs_final_vert_seq_seqdfs,
-                                        vertices_idx_to_name_map);
+      // Only perform check for when depths are recorded by bench
+      if (req_mode == bench_mode::record_depth) {
+        check_if_search_results_are_equal(dfs_final_vert_seq_boost_dfs,
+                                          dfs_final_vert_seq_seqdfs,
+                                          vertices_idx_to_name_map);
+      }
     }
   }
   time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
