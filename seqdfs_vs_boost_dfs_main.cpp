@@ -1,4 +1,5 @@
 
+#include "seqdfs_vs_boost_dfs_main.hpp"
 #include <algorithm>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
@@ -16,7 +17,6 @@
 #include <memory>
 #include <random>
 #include <utility>
-#include "seqdfs_vs_boost_dfs_main.hpp"
 
 constexpr int RANDOM_GRAPH_SEED = 94893;
 constexpr int INTEGRAL_E_ADDIT_TO_V_RATIO = 3;
@@ -207,7 +207,8 @@ int main() {
               << "\n";
 
     dfs_final_vert_seq_boost_dfs.clear();
-    record_in_deque_dfs_visitor.reset_to_init();
+    record_in_deque_dfs_visitor.reset_to_init(
+        *(test_graph_with_vert_vec.vert_vec_ptr));
     for (const vert_descrip_type& vertex : *ptr_to_all_verts) {
       graph_color_map[vertex] = color_template::white();
     }

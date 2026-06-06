@@ -8,7 +8,6 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
-#include <boost/unordered/unordered_node_map.hpp>
 #include <deque>
 #include <memory>
 #include <utility>
@@ -60,7 +59,7 @@ class rec_in_deque_dfs_visit_class : public boost::default_dfs_visitor {
  private:
   std::shared_ptr<final_dfs_deque_result_type> ptr_final_dfs_deque;
   final_dfs_deque_result_type dfs_results;
-  boost::unordered_node_map<vert_descrip_type, long> vertex_to_recur_depth_map;
+  boost::unordered_flat_map<vert_descrip_type, long> vertex_to_recur_depth_map;
 
  public:
   rec_in_deque_dfs_visit_class(const std::size_t num_vertices) {
@@ -71,7 +70,7 @@ class rec_in_deque_dfs_visit_class : public boost::default_dfs_visitor {
     vertex_to_recur_depth_map.reserve(num_vertices);
   }
   void start_vertex(vert_descrip_type vertex, const unigraph_type& unigraph) {
-    vertex_to_recur_depth_map.insert(std::make_pair(vertex, 0L));
+    vertex_to_recur_depth_map[vertex] = 0L;
   }
   void discover_vertex(vert_descrip_type vertex,
                        const unigraph_type& unigraph) {
@@ -82,12 +81,14 @@ class rec_in_deque_dfs_visit_class : public boost::default_dfs_visitor {
     vert_descrip_type source_vert = boost::source(tree_edge, unigraph);
     vert_descrip_type target_vert = boost::target(tree_edge, unigraph);
     long source_vert_depth = vertex_to_recur_depth_map[source_vert];
-    vertex_to_recur_depth_map.insert(
-        std::make_pair(target_vert, source_vert_depth + 1L));
+    vertex_to_recur_depth_map[target_vert] = source_vert_depth + 1L;
   }
-  void reset_to_init() {
+  void reset_to_init(vert_vec_type& vert_vec_ref) {
     ptr_final_dfs_deque->clear();
     vertex_to_recur_depth_map.clear();
+    for (const vert_descrip_type& vertex : vert_vec_ref) {
+      vertex_to_recur_depth_map[vertex] = -1L;
+    }
   }
   const final_dfs_deque_result_type& get_result_deque() {
     return *ptr_final_dfs_deque;
