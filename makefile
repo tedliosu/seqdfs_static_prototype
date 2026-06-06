@@ -9,10 +9,10 @@ MS_MIMALLOC_FOLDER := ms_mimalloc
 MS_MIMALLOC_SO_OBJECT := $(MS_MIMALLOC_FOLDER)/out/release/libmimalloc.so
 
 all: $(MAIN_SRC_FILES)
-	g++ -ggdb3 -O3 -std=c++11 $^ -o $(MAIN_EXE_FILE)
+	g++ -O3 -std=c++14 $^ -o $(MAIN_EXE_FILE)
 
 tests: $(MAIN_UTEST_FILES)
-	g++ -ggdb3 -O3 -std=c++11 $^ -o $(MAIN_TESTS_EXE_FILE)
+	g++ -O3 -std=c++14 $^ -o $(MAIN_TESTS_EXE_FILE)
 
 clean:
 	rm -rf $(MAIN_EXE_FILE) $(MAIN_TESTS_EXE_FILE)
